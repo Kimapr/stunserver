@@ -136,7 +136,7 @@ Cleanup:
     return hr;
 }
 
-HRESULT CStunClientLogic::GetNextMessage(CRefCountedBuffer& spMsg, CSocketAddress* pAddrDest, uint32_t timeCurrentMilliseconds)
+HRESULT CStunClientLogic::GetNextMessage(CRefCountedBuffer& spMsg, CSocketAddress* pAddrDest, uint32_t timeCurrentMilliseconds, bool* testSameAddr)
 {
     HRESULT hr = S_OK;
     uint32_t diff = 0;
@@ -211,6 +211,13 @@ HRESULT CStunClientLogic::GetNextMessage(CRefCountedBuffer& spMsg, CSocketAddres
         _timeLastMessageSent = timeCurrentMilliseconds;
         fReadyToReturn = true;
         hr = S_OK;
+
+        if (testSameAddr)
+        {
+            *testSameAddr = pCurrentTest == &_test1
+                         || pCurrentTest == &_testBehavior2
+                         || pCurrentTest == &_testBehavior3;
+        }
     }
 Cleanup:
     return hr;

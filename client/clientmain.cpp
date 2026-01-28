@@ -457,6 +457,8 @@ HRESULT UdpClientLoop(StunClientLogicConfig& config, const ClientSocketConfig& s
     CSocketAddress addrRemote; // who we
     CSocketAddress addrLocal;
     int ret;
+    bool connected = false;
+    bool shouldConnect = false;
     fd_set set;
     timeval tv = {};
     std::string strAddr;
@@ -492,12 +494,56 @@ HRESULT UdpClientLoop(StunClientLogicConfig& config, const ClientSocketConfig& s
     {
         HRESULT hrRet;
         spMsg->SetSize(0);
-        hrRet = clientlogic.GetNextMessage(spMsg, &addrDest, GetMillisecondCounter());
+        hrRet = clientlogic.GetNextMessage(spMsg, &addrDest, GetMillisecondCounter(), &shouldConnect);
 
         if (SUCCEEDED(hrRet))
         {
             addrDest.ToString(&strAddr);
             ASSERT(spMsg->GetSize() > 0);
+
+            if (connected != shouldConnect || shouldConnect)
+            {
+                if (shouldConnect)
+                {
+                    std::string strAddr;
+                    addrDest.ToString(&strAddr);
+                    Logging::LogMsg(LL_DEBUG, "Connecting UDP socket to %s", strAddr.c_str());
+
+                    ret = ::connect(sock, addrDest.GetSockAddr(), addrDest.GetSockAddrLength());
+                }
+                else
+                {
+                    struct sockaddr_storage nullAddr;
+                    struct sockaddr_storage oldAddr;
+                    socklen_t oldAddrLen = sizeof(oldAddr);
+                    memset(&nullAddr, 0, sizeof(nullAddr));
+                    nullAddr.ss_family = AF_UNSPEC;
+
+                    Logging::LogMsg(LL_DEBUG, "Disconnecting UDP socket");
+
+                    ret = ::connect(sock, (const struct sockaddr *)&nullAddr, sizeof(nullAddr));
+
+                    // Linux unbinds the socket on disconnect if it was bound to an ephemeral port,
+                    // so we may need to save the address before disconnecting and re-bind it back after.
+                    //
+                    // https://bugzilla.kernel.org/show_bug.cgi?id=6646
+                    //
+                    if (::getsockname(sock, (struct sockaddr *)&oldAddr, &oldAddrLen) || CSocketAddress(oldAddr).GetPort() != stunSocket.GetLocalAddress().GetPort())
+                    {
+                        Logging::LogMsg(LL_DEBUG, "UDP socket unbound after disconnect! Re-binding.");
+                        ::bind(sock, stunSocket.GetLocalAddress().GetSockAddr(), stunSocket.GetLocalAddress().GetSockAddrLength());
+                    }
+                }
+
+                if (ret)
+                {
+                    Logging::LogMsg(LL_DEBUG, "ERROR.  connect failed (errno = %d)", errno);
+                }
+                else
+                {
+                    connected = shouldConnect;
+                }
+            }
             
             if (Logging::GetLogLevel() >= LL_DEBUG)
             {
@@ -506,11 +552,18 @@ HRESULT UdpClientLoop(StunClientLogicConfig& config, const ClientSocketConfig& s
                 Logging::LogMsg(LL_DEBUG, "Sending message to %s", strAddr.c_str());
             }
 
-            ret = ::sendto(sock, spMsg->GetData(), spMsg->GetSize(), 0, addrDest.GetSockAddr(), addrDest.GetSockAddrLength());
+            if (connected)
+            {
+                ret = ::send(sock, spMsg->GetData(), spMsg->GetSize(), 0);
+            }
+            else
+            {
+                ret = ::sendto(sock, spMsg->GetData(), spMsg->GetSize(), 0, addrDest.GetSockAddr(), addrDest.GetSockAddrLength());
+            }
 
             if (ret <= 0)
             {
-                Logging::LogMsg(LL_DEBUG, "ERROR.  sendto failed (errno = %d)", errno);
+                Logging::LogMsg(LL_DEBUG, "ERROR.  %s failed (errno = %d)", connected ? "send" : "sendto", errno);
             }
             // there's not much we can do if "sendto" fails except time out and try again
         }

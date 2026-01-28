@@ -106,7 +106,7 @@ public:
     
     HRESULT Initialize(StunClientLogicConfig& config);
     
-    HRESULT GetNextMessage(CRefCountedBuffer& spMsg, CSocketAddress* pAddrDest, uint32_t timeCurrentMilliseconds);
+    HRESULT GetNextMessage(CRefCountedBuffer& spMsg, CSocketAddress* pAddrDest, uint32_t timeCurrentMilliseconds, bool* testSameAddr = NULL);
     
     HRESULT ProcessResponse(CRefCountedBuffer& spMsg, CSocketAddress& addrRemote, CSocketAddress& addrLocal);
     
