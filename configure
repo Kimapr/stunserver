@@ -1,0 +1,32 @@
+#!/bin/sh
+
+if ! test -f Makefile; then
+	echo VPATH builds not supported >&2
+	exit 1
+fi
+
+for arg; do
+	case "$arg" in
+		--prefix=*) printf 'prefix=%s\n' "${arg#*=}";;
+		--exec-prefix=*) printf 'exec-prefix=%s\n' "${arg#*=}";;
+		--prefix=*) printf 'prefix=%s\n' "${arg#*=}";;
+		--bindir=*) printf 'bindir=%s\n' "${arg#*=}";;
+		--datarootdir=*) printf 'datarootdir=%s\n' "${arg#*=}";;
+		--mandir=*) printf 'mandir=%s\n' "${arg#*=}";;
+		--man1dir=*) printf 'man1dir=%s\n' "${arg#*=}";;
+		--srcdir=*) ;;
+		-*) :;;
+		*) printf '%s\n' "$arg";;
+	esac
+done > config.inc
+
+{
+	printf './configure'
+	for arg; do
+		printf ' '
+		printf '%s' "$arg" | sed 's|[^a-zA-Z_=/-]|\\\0|g'
+	done
+	echo
+} > config.status
+
+chmod +x config.status

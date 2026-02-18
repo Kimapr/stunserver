@@ -11,6 +11,8 @@ INSTALL=install
 INSTALL_PROGRAM=$(INSTALL)
 INSTALL_DATA=$(INSTALL) -m 644
 
+sinclude config.inc
+
 all: everything copybin
 
 everything:
@@ -62,5 +64,6 @@ clean:	T := clean
 clean: everything
 	rm -f stunserver stunclient stuntestcode
 
-
+distclean: clean
+	rm -f config.inc config.status
 

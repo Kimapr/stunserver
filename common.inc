@@ -12,6 +12,7 @@ RELEASE_FLAGS := -O3
 DEBUG_FLAGS := -g
 PROFILE_FLAGS := -O3 -g
 FLAVOR_FLAGS = $(RELEASE_FLAGS)
+CFLAGS = $(STANDARD_FLAGS) $(FLAVOR_FLAGS)
 CRYPTO_LIBS := -lcrypto
 PGO1_FLAGS := -fprofile-generate -fprofile-dir=/home/jselbie/profile
 PGO2_FLAGS := -fprofile-use -fprofile-dir=/home/jselbie/profile
@@ -39,10 +40,10 @@ endif
 
 %.hpp.gch: %.hpp
 	echo Building precompiled header: $@
-	$(COMPILE.cpp) $(INCLUDES) $(DEFINES) $(STANDARD_FLAGS) $(FLAVOR_FLAGS) $^
+	$(COMPILE.cpp) $(INCLUDES) $(DEFINES) $(CPPFLAGS) $(CFLAGS) $^
 
 %.o: %.cpp
-	$(COMPILE.cpp) $(INCLUDES) $(DEFINES) $(STANDARD_FLAGS) $(FLAVOR_FLAGS) $^
+	$(COMPILE.cpp) $(INCLUDES) $(DEFINES) $(CPPFLAGS) $(CFLAGS) $^
 
 # put "all" target first so that it is the default
 all:
@@ -65,4 +66,4 @@ pgo2: FLAVOR_FLAGS = $(PGO2_FLAGS) $(RELEASE_FLAGS)
 pgo2: PGO_LINK_FLAGS = $(PGO2_FLAGS)
 pgo2: all
 
-
+sinclude ../config.inc
