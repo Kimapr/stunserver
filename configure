@@ -8,7 +8,7 @@ fi
 for arg; do
 	case "$arg" in
 		--prefix=*) printf 'prefix=%s\n' "${arg#*=}";;
-		--exec-prefix=*) printf 'exec-prefix=%s\n' "${arg#*=}";;
+		--exec-prefix=*) printf 'exec_prefix=%s\n' "${arg#*=}";;
 		--prefix=*) printf 'prefix=%s\n' "${arg#*=}";;
 		--bindir=*) printf 'bindir=%s\n' "${arg#*=}";;
 		--datarootdir=*) printf 'datarootdir=%s\n' "${arg#*=}";;
